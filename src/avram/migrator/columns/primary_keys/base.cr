@@ -5,7 +5,7 @@ abstract class Avram::Migrator::Columns::PrimaryKeys::Base
 
   abstract def column_type
 
-  def build : String
-    %(  #{name} #{column_type} PRIMARY KEY)
+  def build(composite : Bool = false) : String
+    %(  #{name} #{column_type}#{" PRIMARY KEY" if !composite})
   end
 end

@@ -72,6 +72,30 @@ describe Avram::Migrator::CreateTableStatement do
     CREATE TABLE users (
       id smallserial PRIMARY KEY);
     SQL
+
+    built = Avram::Migrator::CreateTableStatement.new(:users).build do
+      primary_key id1 : Int32, id2 : Int32
+    end
+
+    built.statements.size.should eq 1
+    built.statements.first.should eq <<-SQL
+    CREATE TABLE users (
+      id1 serial,
+      id2 serial,
+      PRIMARY KEY (id1, id2));
+    SQL
+
+    built = Avram::Migrator::CreateTableStatement.new(:users).build do
+      primary_key id1 : UUID, id2 : Int64
+    end
+
+    built.statements.size.should eq 1
+    built.statements.first.should eq <<-SQL
+    CREATE TABLE users (
+      id1 uuid DEFAULT gen_random_uuid(),
+      id2 bigserial,
+      PRIMARY KEY (id1, id2));
+    SQL
   end
 
   it "sets default values" do

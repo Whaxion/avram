@@ -9,8 +9,8 @@ module Avram::Migrator::Columns::PrimaryKeys
       "uuid"
     end
 
-    def build : String
-      %(  #{name} #{column_type} PRIMARY KEY DEFAULT gen_random_uuid())
+    def build(composite : Bool = false) : String
+      %(  #{name} #{column_type}#{" PRIMARY KEY" if !composite} DEFAULT gen_random_uuid())
     end
   end
 end
