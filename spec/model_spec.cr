@@ -185,4 +185,39 @@ describe Avram::Model do
   it "can infer table name for namedspaced models" do
     NamedSpaced::Model.table_name.should eq(:named_spaced_models)
   end
+
+  describe "models with composite primary key" do
+    it "sets up initializers accepting full primary key" do
+      buy = Buy.new(
+        user_id: 123_i64,
+        product_id: UUID.new("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"),
+        quantity: Int32::MAX
+      )
+    end
+
+    it "can be saved" do
+      BuyFactory.create
+
+      buy = BuyQuery.new.first
+      buy.user_id.should be_a Int64
+      buy.product_id.should be_a UUID
+    end
+
+    it "can be updated" do
+      BuyFactory.create
+
+      buy = BuyQuery.new.first
+      updated_buy = Buy::SaveOperation.update!(buy, quantity: 10)
+      updated_buy.quantity.should eq(10)
+    end
+
+    it "can be deleted" do
+      BuyFactory.create
+
+      buy = BuyQuery.new.first
+      buy.delete
+
+      Buy::BaseQuery.all.size.should eq 0
+    end
+  end
 end

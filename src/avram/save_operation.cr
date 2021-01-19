@@ -49,7 +49,7 @@ abstract class Avram::SaveOperation(T)
     @params = Avram::Params.new
   end
 
-  delegate :database, :table_name, :primary_key_name, to: T
+  delegate :database, :table_name, :primary_key_name, :primary_key_names, to: T
 
   # :nodoc:
   def published_save_failed_event
@@ -342,7 +342,11 @@ abstract class Avram::SaveOperation(T)
   end
 
   private def record_id
-    @record.try &.id
+    {% if T.has_constant?("PRIMARY_KEY_TYPE") %}
+      @record.try &.id
+    {% else %}
+      @record.try &.ids
+    {% end %}
   end
 
   def before_save; end
@@ -367,10 +371,17 @@ abstract class Avram::SaveOperation(T)
   end
 
   private def update_query(id)
-    Avram::QueryBuilder
+    qb = Avram::QueryBuilder
       .new(table_name)
       .select(T.column_names)
-      .where(Avram::Where::Equal.new(primary_key_name, id.to_s))
+    {% if T.has_constant?("PRIMARY_KEY_TYPE") %}
+      qb.where(Avram::Where::Equal.new(primary_key_name, id.to_s))
+    {% else %}
+      primary_key_names.each_index do |i|
+        qb = qb.where(Avram::Where::Equal.new(primary_key_names[i], id.as(T::PrimaryKeyType)[i].to_s))
+      end
+    {% end %}
+    qb
   end
 
   private def insert_sql
