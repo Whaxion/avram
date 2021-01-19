@@ -70,23 +70,24 @@ class Avram::Migrator::CreateTableStatement
     SQL
   end
 
+  macro primary_key(type_declaration)
+    rows << Avram::Migrator::Columns::PrimaryKeys::{{ type_declaration.type }}PrimaryKey
+      .new(name: {{ type_declaration.var.stringify }})
+      .build
+  end
+
+  # Only called for composite primary keys
   macro primary_key(*type_declaration)
-    {% if (type_declaration.size > 1) %}
-      {% primary_keys = [] of StringLiteral %}
-    {% end %}
+    {% primary_keys = [] of StringLiteral %}
 
     {% for type_dec, index in type_declaration %}
-    rows << Avram::Migrator::Columns::PrimaryKeys::{{ type_dec.type }}PrimaryKey
-      .new(name: {{ type_dec.var.stringify }})
-      .build(composite: {{ type_declaration.size > 1 }})
-      {% if (type_declaration.size > 1) %}
+      rows << Avram::Migrator::Columns::PrimaryKeys::{{ type_dec.type }}PrimaryKey
+        .new(name: {{ type_dec.var.stringify }})
+        .build(composite: true)
         {% primary_keys << type_dec.var.stringify %}
-      {% end %}
     {% end %}
 
-    {% if (type_declaration.size > 1) %}
-      constraints << %(  PRIMARY KEY ({{ primary_keys.join(", ").id }}))
-    {% end %}
+    constraints << %(  PRIMARY KEY ({{ primary_keys.join(", ").id }}))
   end
 
   macro add_timestamps
