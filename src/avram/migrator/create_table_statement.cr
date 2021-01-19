@@ -72,7 +72,7 @@ class Avram::Migrator::CreateTableStatement
 
   macro primary_key(*type_declaration)
     {% if (type_declaration.size > 1) %}
-    primary_keys = [] of String
+      {% primary_keys = [] of StringLiteral %}
     {% end %}
 
     {% for type_dec, index in type_declaration %}
@@ -80,12 +80,12 @@ class Avram::Migrator::CreateTableStatement
       .new(name: {{ type_dec.var.stringify }})
       .build(composite: {{ type_declaration.size > 1 }})
       {% if (type_declaration.size > 1) %}
-        primary_keys << {{ type_dec.var.stringify }}
+        {% primary_keys << type_dec.var.stringify %}
       {% end %}
     {% end %}
 
     {% if (type_declaration.size > 1) %}
-      constraints << %(  PRIMARY KEY (#{primary_keys.join(", ")}))
+      constraints << %(  PRIMARY KEY ({{ primary_keys.join(", ").id }}))
     {% end %}
   end
 
