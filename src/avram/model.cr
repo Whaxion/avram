@@ -110,8 +110,63 @@ abstract class Avram::Model
     {% end %}
   end
 
+  macro composite_primary_key(*columns)
+    {% pk_types = [] of SymbolLiteral %}
+    {% pk_names = [] of ASTNode %}
+    {% pk_ids = [] of ASTNode %}
+    {% if @type.has_constant? "PRIMARY_KEY_TYPE" %}
+      {% raise <<-ERROR
+        A primary key is already specified.
+        Maybe you have forgotten to call skip_default_columns
+        ERROR
+      %}
+    {% end %}
+    {% if columns.size < 2 %}
+    {% raise "composite_primary_key expected at least two primary keys, instead got #{columns.size}" %}
+    {% end %}
+    {% for column, i in columns %}
+      {% found = false %}
+      {% for column2, j in COLUMNS %}
+        {% if column.id == column2["name"] %}
+          {% pk_types << column2["type"] %}
+          {% pk_names << column2["name"].symbolize %}
+          {% pk_ids << column2["name"].id %}
+          {% found = true %}
+        {% end %}
+      {% end %}
+      {% if !found %}
+        {% raise <<-ERROR
+        composite_primary_key #{column.stringify} not found.
+        Example:
+
+          table do
+            column id1 : Int64
+            belongs_to author : User
+            composite_primary_key :id1, :author_id
+            ...
+          end
+        ERROR
+      %}
+      {% end %}
+    {% end %}
+    PRIMARY_KEY_TYPES = {{ pk_types }}
+    PRIMARY_KEY_NAMES = {{ pk_names }}
+    alias PrimaryKeyType = Array({{ pk_types.join(" | ").id }})
+
+    def self.primary_key_names : Array(Symbol)
+      {{ pk_names }}
+    end
+
+    include Avram::CompositePrimaryKeyMethods
+
+    # Multiple ids so we are using ids
+    def ids
+      {{ pk_ids }}
+    end
+  end
+
   macro validate_primary_key
-    {% if !@type.has_constant? "PRIMARY_KEY_TYPE" %}
+    {% if !@type.has_constant?("PRIMARY_KEY_TYPE") && !@type.has_constant?("PRIMARY_KEY_TYPES") %}
       \{% raise <<-ERROR
         No primary key was specified.
 

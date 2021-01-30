@@ -10,6 +10,9 @@ class Avram::BaseQueryTemplate
       {% if type.resolve.has_constant?("PRIMARY_KEY_NAME") %}
         include Avram::PrimaryKeyQueryable({{ type }})
       {% end %}
+      {% if type.resolve.has_constant?("PRIMARY_KEY_NAMES") %}
+        include Avram::CompositePrimaryKeyQueryable({{ type }})
+      {% end %}
 
       macro generate_criteria_method(name, type)
         def \{{ name }}
